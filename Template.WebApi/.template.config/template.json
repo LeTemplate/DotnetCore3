@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Minskiter",
+  "classifications": [ "Web/API" ],
+  "identity": "Le WebApi 3.1",
+  "name": ".Net Core 3.1 Web Api",
+  "shortName": "LeWebApi3",
+  "description": "Swagger,SignalHub,JwtIdentity",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "WebApi",
+  "preferNameDirectory": true,
+}
