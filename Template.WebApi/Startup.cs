@@ -1,16 +1,20 @@
+#if (EnableJsonWebToken)
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+#endif
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+#if (EnableSwagger)
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+#endif
 using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using WebApi.Hubs;
+using System.Data.SqlClient;
 
 namespace WebApi
 {
@@ -28,53 +32,46 @@ namespace WebApi
         {
             services.AddCors(option =>
             {
-                option.AddPolicy("any", builder =>
+                // Add Default Cross Domain
+                option.AddDefaultPolicy(policy =>
                 {
-                    builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                    policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod();
                 });
             });
 
             services.AddControllers();
 
-            services.AddSignalR();
             //Swagger docs
-            services.AddSwaggerGen(c =>
-              {
-                  c.SwaggerDoc("v1", new OpenApiInfo
-                  {
-                      Title = "Web Api Template",
-                      Version = "v1",
-                      Description = "Web Api 模板 3.1版本",
-                      TermsOfService = new Uri("https://minskiter.github.io"),
-                      Contact = new OpenApiContact
-                      {
-                          Name = "minskiter",
-                          Email = "minskiter@gmail.com",
-                          Url = new Uri("https://blog.leavessoft.cn")
-                      },
-                      License = new OpenApiLicense
-                      {
-                          Name = "MIT license",
-                      }
-                  });
-                  var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                  var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                  c.IncludeXmlComments(xmlPath);
-              }
-            );
-            // Jwt Token
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
-            {
-                option.TokenValidationParameters = new TokenValidationParameters
-                {
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"])),
-                    ValidIssuer = Configuration["Jwt:Issue"],
-                    ValidateIssuer = true,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true, // validate signingkey
-                    ValidateLifetime = true, // validate datetime 
-                };
-            });
+#if (EnableSwagger)
+      services.AddSwaggerGen(c =>
+        {
+          c.SwaggerDoc("v1", new OpenApiInfo
+          {
+            Title = "Web API",
+            Version = "v1",
+            Description = "Dotnet Core 3.1",
+          });
+          var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+          var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+          c.IncludeXmlComments(xmlPath);
+        }
+      );
+#endif
+#if (EnableJsonWebToken)
+      // Jwt Token
+      services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
+      {
+        option.TokenValidationParameters = new TokenValidationParameters
+        {
+          IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"])),
+          ValidIssuer = Configuration["Jwt:Issue"],
+          ValidateIssuer = true,
+          ValidateAudience = false,
+          ValidateIssuerSigningKey = true, // validate signingkey
+          ValidateLifetime = true, // validate datetime 
+        };
+      });
+#endif
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -88,7 +85,7 @@ namespace WebApi
             {
                 app.UseHsts();
             }
-
+#if (EnableSwagger)
             app.UseSwagger();
 
             app.UseSwaggerUI(c =>
@@ -96,20 +93,20 @@ namespace WebApi
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Web Api V1");
                 c.RoutePrefix = string.Empty;
             });
+#endif
 
             app.UseRouting();
             // Cors Middleware must be between Routing and Endpoints.
-            app.UseCors("any");
+            app.UseCors();
             // Authentication before authorization
             app.UseAuthentication();
 
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-                endpoints.MapHub<NotificationHub>("/notification");
-            });
+          {
+              endpoints.MapControllers();
+          });
         }
     }
 }
